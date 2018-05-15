@@ -1,0 +1,5 @@
+scikit_image==0.13.1
+pandas==0.22.0
+numpy==1.14.3
+scikit_learn==0.19.1
+tqdm==4.23.3

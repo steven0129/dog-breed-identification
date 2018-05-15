@@ -1,10 +1,10 @@
+# coding=utf-8
 import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import model
 import pandas as pd
-import cv2
 import multiprocessing as mp
 from skimage import io,transform
 from tqdm import tqdm
@@ -15,9 +15,9 @@ from tensorflow.python.keras.preprocessing.image import load_img, img_to_array
 INPUT_SIZE = [224, 224, 3]
 N_CLASSES = 120
 LEARNING_RATE = 2e-5
-EPOCHS = 1
+EPOCHS = 50
 BATCH_SIZE = 10
-LOAD_PRETRAIN = False
+LOAD_PRETRAIN = True
 DATA_PATH = 'dog-breed-identification'
 BREEDS = ['affenpinscher','afghan_hound','african_hunting_dog','airedale','american_staffordshire_terrier','appenzeller','australian_terrier','basenji','basset','beagle','bedlington_terrier','bernese_mountain_dog','black-and-tan_coonhound','blenheim_spaniel','bloodhound','bluetick','border_collie','border_terrier','borzoi','boston_bull','bouvier_des_flandres','boxer','brabancon_griffon','briard','brittany_spaniel','bull_mastiff','cairn','cardigan','chesapeake_bay_retriever','chihuahua','chow','clumber','cocker_spaniel','collie','curly-coated_retriever','dandie_dinmont','dhole','dingo','doberman','english_foxhound','english_setter','english_springer','entlebucher','eskimo_dog','flat-coated_retriever','french_bulldog','german_shepherd','german_short-haired_pointer','giant_schnauzer','golden_retriever','gordon_setter','great_dane','great_pyrenees','greater_swiss_mountain_dog','groenendael','ibizan_hound','irish_setter','irish_terrier','irish_water_spaniel','irish_wolfhound','italian_greyhound','japanese_spaniel','keeshond','kelpie','kerry_blue_terrier','komondor','kuvasz','labrador_retriever','lakeland_terrier','leonberg','lhasa','malamute','malinois','maltese_dog','mexican_hairless','miniature_pinscher','miniature_poodle','miniature_schnauzer','newfoundland','norfolk_terrier','norwegian_elkhound','norwich_terrier','old_english_sheepdog','otterhound','papillon','pekinese','pembroke','pomeranian','pug','redbone','rhodesian_ridgeback','rottweiler','saint_bernard','saluki','samoyed','schipperke','scotch_terrier','scottish_deerhound','sealyham_terrier','shetland_sheepdog','shih-tzu','siberian_husky','silky_terrier','soft-coated_wheaten_terrier','staffordshire_bullterrier','standard_poodle','standard_schnauzer','sussex_spaniel','tibetan_mastiff','tibetan_terrier','toy_poodle','toy_terrier','vizsla','walker_hound','weimaraner','welsh_springer_spaniel','west_highland_white_terrier','whippet','wire-haired_fox_terrier','yorkshire_terrier']
 
@@ -29,7 +29,7 @@ def train_eval(sess, x_data, y_label, batch_size, train_phase, is_eval,  epoch=N
     n_sample = x_data.shape[0]
     n_batch = int((n_sample+batch_size-1) / batch_size)
     tmp_loss, tmp_acc = 0, 0
-    for batch in range(n_batch):
+    for batch in tqdm(range(n_batch)):
         start = batch * batch_size
         end = min(n_sample, start + batch_size) 
         _, batch_loss, batch_acc = sess.run([train_op, loss, accuracy], 
@@ -40,7 +40,7 @@ def train_eval(sess, x_data, y_label, batch_size, train_phase, is_eval,  epoch=N
     tmp_loss /= n_sample
     tmp_acc /= n_sample
     if train_phase:
-        print('\nepoch: {0}, loss: {1:.4f}, acc: {2:.4f}'.format(epoch+1, tmp_loss, tmp_acc))
+        tqdm.write('\nepoch: {0}, loss: {1:.4f}, acc: {2:.4f}'.format(epoch+1, tmp_loss, tmp_acc))
         
 def test_eval(sess, x_data, train_phase):
     batch_size = 1
@@ -48,11 +48,11 @@ def test_eval(sess, x_data, train_phase):
     n_batch = int((n_sample+batch_size-1) / batch_size)
     tmp_pred=[]
     log=[]
-    for batch in range(n_batch):
+    for batch in tqdm(range(n_batch)):
         start = batch * batch_size
         end = min(n_sample, start + batch_size)
         tmp_logits = sess.run(logits, feed_dict={x: x_data[start:end], is_training: train_phase})
-        tmp=softmax(np.squeeze(tmp_logits))
+        tmp = softmax(np.squeeze(tmp_logits))
         tmp_pred.append(tmp)
     tmp_pred = np.array(tmp_pred)
 
@@ -104,8 +104,6 @@ if __name__ == '__main__':
 
         print('輸入訓練影像中...')
         train_data = np.array([img_to_array(img) for img in pool.imap_unordered(load_train_img, tqdm(train_files))])
-        print(train_data.shape)
-        
 
         print('Training...')
         for i in tqdm(range(EPOCHS)):
@@ -118,5 +116,6 @@ if __name__ == '__main__':
         print('輸入測試影像中...')
         test_data = np.array([img_to_array(img) for img in pool.imap_unordered(load_test_img, tqdm(test_files))])
         ans = test_eval(sess=sess, x_data=test_data, train_phase=False)
+        print(np.argmax(ans, axis=1))
         del test_data # 避免記憶體占用
 
