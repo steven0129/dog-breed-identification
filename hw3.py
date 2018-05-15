@@ -120,8 +120,3 @@ if __name__ == '__main__':
         ans = test_eval(sess=sess, x_data=test_data, train_phase=False)
         del test_data # 避免記憶體占用
 
-
-
-
-
-
