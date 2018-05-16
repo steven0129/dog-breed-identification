@@ -13,12 +13,10 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.preprocessing.image import load_img, img_to_array
 
-np.set_printoptions(suppress=True)
-
 INPUT_SIZE = [224, 224, 3]
 N_CLASSES = 120
 LEARNING_RATE = 2e-5
-EPOCHS = 1
+EPOCHS = 50
 BATCH_SIZE = 10
 LOAD_PRETRAIN = True
 DATA_PATH = 'dog-breed-identification'
@@ -108,8 +106,8 @@ if __name__ == '__main__':
 
         print('Training...')
         for i in tqdm(range(EPOCHS)):
-            epoch, loss, acc = train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, train_phase=True, is_eval=False,epoch=i)
-            tqdm.write(f'epoch = {epoch + 1}, loss = {loss}, acc = {acc}')
+            myEpoch, myLoss, myAcc = train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, train_phase=True, is_eval=False,epoch=i)
+            tqdm.write(f'epoch = {myEpoch + 1}, loss = {myLoss}, acc = {myAcc}')
         del train_data # 避免記憶體占用
 
         print('輸入測試影像中...')
