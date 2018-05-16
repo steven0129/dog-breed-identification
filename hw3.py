@@ -6,16 +6,19 @@ import tensorflow as tf
 import model
 import pandas as pd
 import multiprocessing as mp
+import csv
 from skimage import io,transform
 from tqdm import tqdm
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.preprocessing.image import load_img, img_to_array
 
+np.set_printoptions(suppress=True)
+
 INPUT_SIZE = [224, 224, 3]
 N_CLASSES = 120
 LEARNING_RATE = 2e-5
-EPOCHS = 50
+EPOCHS = 1
 BATCH_SIZE = 10
 LOAD_PRETRAIN = True
 DATA_PATH = 'dog-breed-identification'
@@ -32,15 +35,13 @@ def train_eval(sess, x_data, y_label, batch_size, train_phase, is_eval,  epoch=N
     for batch in tqdm(range(n_batch)):
         start = batch * batch_size
         end = min(n_sample, start + batch_size) 
-        _, batch_loss, batch_acc = sess.run([train_op, loss, accuracy], 
-                                            feed_dict={x: x_data[start:end], y: y_label[start:end], 
-                                            is_training: train_phase})
+        _, batch_loss, batch_acc = sess.run([train_op, loss, accuracy], feed_dict={x: x_data[start:end], y: y_label[start:end], is_training: train_phase})
         tmp_loss += batch_loss * (end - start)
         tmp_acc += batch_acc * (end - start)
     tmp_loss /= n_sample
     tmp_acc /= n_sample
-    if train_phase:
-        tqdm.write('\nepoch: {0}, loss: {1:.4f}, acc: {2:.4f}'.format(epoch+1, tmp_loss, tmp_acc))
+
+    return epoch, tmp_loss, tmp_acc
         
 def test_eval(sess, x_data, train_phase):
     batch_size = 1
@@ -107,15 +108,20 @@ if __name__ == '__main__':
 
         print('Training...')
         for i in tqdm(range(EPOCHS)):
-            train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, 
-                    train_phase=True, is_eval=False,epoch=i)
-        #saver.save(sess, 'model/model.ckpt')
+            epoch, loss, acc = train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, train_phase=True, is_eval=False,epoch=i)
+            tqdm.write(f'epoch = {epoch + 1}, loss = {loss}, acc = {acc}')
         del train_data # 避免記憶體占用
 
-
         print('輸入測試影像中...')
-        test_data = np.array([img_to_array(img) for img in pool.imap_unordered(load_test_img, tqdm(test_files))])
+        test_data = np.array([img_to_array(img) for img in pool.imap(load_test_img, tqdm(test_files))])
         ans = test_eval(sess=sess, x_data=test_data, train_phase=False)
-        print(np.argmax(ans, axis=1))
-        del test_data # 避免記憶體占用
 
+        print('輸出結果中...')
+        with open('result.csv', 'w') as f:
+            writer = csv.writer(f, delimiter = ',')
+            writer.writerow(['id'] + BREEDS)
+
+            for index, single_data in enumerate(tqdm(ans)):
+                writer.writerow([test_files[index].rstrip('.jpg')] + single_data.tolist())
+        
+        del test_data # 避免記憶體占用
