@@ -105,10 +105,12 @@ if __name__ == '__main__':
         train_data = np.array([img_to_array(img) for img in pool.imap_unordered(load_train_img, tqdm(train_files))])
 
         print('Training...')
-        for i in tqdm(range(EPOCHS)):
-            myEpoch, myLoss, myAcc = train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, train_phase=True, is_eval=False,epoch=i)
-            tqdm.write(f'epoch = {myEpoch + 1}, loss = {myLoss}, acc = {myAcc}')
-        del train_data # 避免記憶體占用
+        with open('loss.csv', 'w') as f:
+            for i in tqdm(range(EPOCHS)):
+                myEpoch, myLoss, myAcc = train_eval(sess=sess, x_data=train_data, y_label=train_label, batch_size=BATCH_SIZE, train_phase=True, is_eval=False,epoch=i)
+                tqdm.write(f'epoch = {myEpoch + 1}, loss = {myLoss}, acc = {myAcc}')
+                f.write(f'{myLoss},{myAcc}\n')
+            del train_data # 避免記憶體占用
 
         print('輸入測試影像中...')
         test_data = np.array([img_to_array(img) for img in pool.imap(load_test_img, tqdm(test_files))])
